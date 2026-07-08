@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.30)
 project(AsyncHttpProxy VERSION 1.0.0 LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 26)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -11,11 +11,13 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     add_compile_options(-fmax-errors=3)
 endif()
 
-set(CMAKE_PREFIX_PATH /usr/local/asio)
-
+#set(CMAKE_PREFIX_PATH /usr/local/asio)
+add_compile_definitions(_WIN32_WINNT=0x0A00)
 # Ищем необходимые библиотеки
-find_package(Boost REQUIRED)
+find_package(Boost REQUIRED COMPONENTS system)
 find_package(GTest REQUIRED)
+message(STATUS "Boost_INCLUDE_DIRS = ${Boost_INCLUDE_DIRS}")
+message(STATUS "Boost_LIBRARIES    = ${Boost_LIBRARIES}")
 file(GLOB HEADER_FILES "${CMAKE_SOURCE_DIR}/include/*.hpp")
 
 
