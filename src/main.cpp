@@ -67,14 +67,14 @@ public:
 private:
     awaitable<void> do_accept() {
         try {
-            for (;;) {
+            while (true) {
                 tcp::socket socket = co_await acceptor_.async_accept(use_awaitable);
-
                 co_spawn(io_context_, session(std::move(socket), io_context_), boost::asio::detached);
             }
         } catch (const boost::system::system_error &e) {
-            if (e.code() != boost::asio::error::operation_aborted)
+            if (e.code() != boost::asio::error::operation_aborted){
                 throw;
+            }
         }
     }
 
