@@ -113,8 +113,6 @@ awaitable<void> session(tcp::socket client_socket, io_context &io_context) {
             });
         }
 
-        // здесь responseBuffer уже содержит только тело ответа
-
         if (responseBuffer.size() < contentLength) {
             co_await async_read(socket, responseBuffer,
                                 boost::asio::transfer_exactly(contentLength - responseBuffer.size()), use_awaitable);
