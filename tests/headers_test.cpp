@@ -29,12 +29,12 @@ TEST(iterHeaders, WithoutRequestLine) {
     std::string str = "header: 1";
     std::vector<std::pair<std::string, std::string>> expected{{"header", "1"}};
     int counter = 0;
-    auto l = [&expected, &counter](const auto & header, const auto & value) { 
+    auto l = [&expected, &counter](const auto &header, const auto &value) {
         ASSERT_EQ(counter, 0);
         ++counter;
         ASSERT_EQ(expected.front().first, header);
         ASSERT_EQ(expected.front().second, value);
-        };
+    };
     iterHeaders(str, l);
     ASSERT_EQ(counter, 1);
 }
@@ -57,7 +57,7 @@ TEST(iterHeaders, WithoutRequestLine2) {
     std::string str = "header: 1\r\nheader2: 2";
     std::vector<std::pair<std::string, std::string>> expected{{"header", "1"}, {"header2", "2"}};
     int counter = 0;
-    
+
     auto l = [&expected, &counter](const auto &header, const auto &value) {
         ASSERT_TRUE(counter < expected.size());
         ASSERT_EQ(expected[counter].first, header);
@@ -68,30 +68,44 @@ TEST(iterHeaders, WithoutRequestLine2) {
     ASSERT_EQ(counter, 2);
 }
 
-//TEST(iterHeaders, SkipRequestLine) {
-//    std::string str = "header: 1";
-//    std::vector<std::pair<std::string, std::string>> expected{{"header", "1"}};
-//    int counter = 0;
-//    auto l = [&expected, &counter](const auto &header, const auto &value) {
-//        ASSERT_EQ(counter, 0);
-//        ++counter;
-//        ASSERT_EQ(expected.front().first, header);
-//        ASSERT_EQ(expected.front().second, value);
-//    };
-//    iterHeaders(str, l);
-//    ASSERT_EQ(counter, 1);
-//}
-
 TEST(iterHeaders, SingleHeader) {
-    // code here
+    std::string str = "GET /index.html HTTP/1.1\r\nheader: 1";
+    std::vector<std::pair<std::string, std::string>> expected{{"header", "1"}};
+    int counter = 0;
+    auto l = [&expected, &counter](const auto &header, const auto &value) {
+        ASSERT_EQ(counter, 0);
+        ++counter;
+        ASSERT_EQ(expected.front().first, header);
+        ASSERT_EQ(expected.front().second, value);
+    };
+    iterHeaders(str, l);
+    ASSERT_EQ(counter, 1);
 }
 
 TEST(iterHeaders, MultipleHeaders) {
-    // code here
+    std::string str = "GET /index.html HTTP/1.1\r\nheader: 1\r\nheader2: 2\r\nheader3: 3";
+    std::vector<std::pair<std::string, std::string>> expected{{"header", "1"}, {"header2", "2"}, {"header3", "3"}};
+    int counter = 0;
+    auto l = [&expected, &counter](const auto &header, const auto &value) {
+        ASSERT_EQ(expected[counter].first, header);
+        ASSERT_EQ(expected[counter].second, value);
+        ++counter;
+    };
+    iterHeaders(str, l);
+    ASSERT_EQ(counter, 3);
 }
 
 TEST(iterHeaders, MultipleSameHeaders) {
-    // code here
+    std::string str = "GET /index.html HTTP/1.1\r\nheader: 1\r\nheader: 1\r\nheader: 1";
+    std::vector<std::pair<std::string, std::string>> expected{{"header", "1"}, {"header", "1"}, {"header", "1"}};
+    int counter = 0;
+    auto l = [&expected, &counter](const auto &header, const auto &value) {
+        ASSERT_EQ(expected[counter].first, header);
+        ASSERT_EQ(expected[counter].second, value);
+        ++counter;
+    };
+    iterHeaders(str, l);
+    ASSERT_EQ(counter, 3);
 }
 
 TEST(findHostPort, Simple) {

@@ -14,7 +14,7 @@ void iterHeaders(std::string_view req, Callback&& callback) {
     }
 
     if (req[pos] == '\r'){
-        if (req.size() > pos && req[pos+1] == '\n'){
+        if (req.size() > pos +1 && req[pos+1] == '\n'){
             pos += 2;
         } else {
             return;
