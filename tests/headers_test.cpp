@@ -109,17 +109,28 @@ TEST(iterHeaders, MultipleSameHeaders) {
 }
 
 TEST(findHostPort, Simple) {
-    // code here
+    std::string str = "Hello\r\nHost: ya.ru:1234";
+    const auto [host, port] = findHostPort(str);
+    ASSERT_EQ(host, "ya.ru");
+    ASSERT_EQ(port, "1234");
 }
 
 TEST(findHostPort, NoHost) {
-    // code here
+    std::string str = "Hello\r\nHeader: ya.ru:1234";
+    const auto [host, port] = findHostPort(str);
+    ASSERT_EQ(host, "");
+    ASSERT_EQ(port, "");
 }
 
 TEST(findContentLength, Simple) {
-    // code here
+    std::string str = "Hello\r\nContent-Length: 123";
+    const auto length = findContentLength(str);
+    ASSERT_TRUE(length.has_value());
+    ASSERT_EQ(length.value(), 123);
 }
 
 TEST(findContentLength, NoContentLength) {
-    // code here
+    std::string str = "Hello\r\nHeader: 123";
+    const auto length = findContentLength(str);
+    ASSERT_FALSE(length.has_value());
 }

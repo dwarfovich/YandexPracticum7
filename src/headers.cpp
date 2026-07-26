@@ -8,94 +8,66 @@ using namespace std::string_view_literals;
 
 using Callback = std::function<void(std::string_view, std::string_view)>;
 
+std::string_view trim(std::string_view str) {
+    auto first = std::ranges::find_if_not(str, isspace);
+    auto last = std::ranges::find_if_not(std::views::reverse(str), isspace).base();
+
+    return std::string_view(first, last);
+}
+
 void iterHeaders(std::string_view req, Callback &&callback) {
-    auto pos = req.find_first_of("\r:\n");
-    if (pos == std::string_view::npos) {
-        return;
-    }
+    for (auto line : std::views::split(req, std::string_view{"\r\n"})) {
+        auto colon = std::ranges::find(line, ':');
 
-    if (req[pos] == '\r') {
-        if (req.size() > pos + 1 && req[pos + 1] == '\n') {
-            pos += 2;
-        } else {
-            return;
-        }
-    } else if (req[pos] == ':') {
-        pos = 0;
-    }
-
-    while (true) {
-        if (pos >= req.size()) {
-            return;
+        if (colon == line.end()) {
+            continue;
         }
 
-        if (req.compare(pos, 2, "\r\n") == 0) {
-            return;
-        }
+        auto header = trim(std::string_view{line.begin(), colon});
+        auto value = trim(std::string_view{std::next(colon), line.end()});
 
-        auto colon = req.find(':', pos);
-        if (colon == std::string_view::npos) {
-            return;
-        }
-
-        auto lineEnd = req.find("\r\n", colon);
-        if (lineEnd == std::string_view::npos) {
-            lineEnd = req.size();
-        }
-
-        std::string_view header = req.substr(pos, colon - pos);
-        std::size_t valueBegin = colon + 1;
-        while (valueBegin < lineEnd && (req[valueBegin] == ' ' || req[valueBegin] == '\t')) {
-            ++valueBegin;
-        }
-
-        std::string_view value = req.substr(valueBegin, lineEnd - valueBegin);
         callback(header, value);
-        pos = lineEnd + 2;
     }
 }
 
 std::pair<std::string, std::string> findHostPort(std::string_view req) {
-    static constexpr std::string_view hostHeaderText = "Host:";
+    static constexpr std::string_view hostHeaderText = "Host";
 
-    const auto pos = req.find(hostHeaderText);
-    if (pos == std::string_view::npos)
-        return {};
+    std::string_view addressValue;
 
-    auto hostStart = pos + hostHeaderText.size();
+    iterHeaders(req, [&](const auto &header, const auto &value) {
+        if (header == hostHeaderText) {
+            addressValue = value;
+        }
+    });
 
-    while (hostStart < req.size() && req[hostStart] == ' ')
-        ++hostStart;
-
-    auto lineEnd = req.find("\r\n", hostStart);
-    if (lineEnd == std::string_view::npos)
-        return {};
-
-    auto hostPort = req.substr(hostStart, lineEnd - hostStart);
-
-    auto colon = hostPort.find(':');
-
+    auto colon = addressValue.find(':');
     if (colon == std::string_view::npos) {
-        return {std::string(hostPort), {}};
+        return {std::string(addressValue), {}};
     }
 
-    return {std::string(hostPort.substr(0, colon)), std::string(hostPort.substr(colon + 1))};
+    return {std::string(addressValue.substr(0, colon)), std::string(addressValue.substr(colon + 1))};
 }
 
 std::optional<size_t> findContentLength(std::string_view rsp) {
-    static const std::string contentLengthHeaderText = "Content-Length: ";
-    const auto pos = rsp.find(contentLengthHeaderText);
-    if (pos == std::string::npos) {
-        return {};
-    } else {
-        const auto endPos = rsp.find("\r", pos + contentLengthHeaderText.size());
-        if (endPos == std::string::npos) {
-            return {};
-        } else {
-            std::string_view value{rsp.cbegin() + pos + contentLengthHeaderText.size(), rsp.cbegin() + endPos};
-            std::size_t length = 0;
-            std::from_chars(value.data(), value.data() + value.size(), length);
-            return length;
+    static constexpr std::string_view contentLengthHeaderText = "Content-Length";
+
+    std::string_view lengthStr;
+    iterHeaders(rsp, [&](const auto &header, const auto &value) {
+        if (header == contentLengthHeaderText) {
+            lengthStr = value;
         }
+    });
+
+    if (lengthStr.empty()) {
+        return std::nullopt;
     }
+
+    std::size_t value{};
+    auto [ptr, ec] = std::from_chars(lengthStr.data(), lengthStr.data() + lengthStr.size(), value);
+    if (ec != std::errc{} || ptr != lengthStr.data() + lengthStr.size()) {
+        return std::nullopt;
+    }
+
+    return value;
 }

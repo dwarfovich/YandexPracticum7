@@ -46,16 +46,15 @@ awaitable<std::pair<std::string, std::string>> readAnswer(tcp::socket &socket) {
         co_await async_read(socket, buffer, boost::asio::transfer_exactly(contentLength - buffer.size()),
                             use_awaitable);
     } else if (contentLength == 0) {
-        boost::system::error_code errorCode;
+        error_code errorCode;
         while (true) {
             static constexpr std::size_t bufferSize = 4096;
             std::size_t n = co_await socket.async_read_some(
-                buffer.prepare(bufferSize), boost::asio::redirect_error(boost::asio::use_awaitable, errorCode));
+                buffer.prepare(bufferSize), boost::asio::redirect_error(use_awaitable, errorCode));
 
             if (errorCode == boost::asio::error::eof) {
                 break;
             }
-
             if (errorCode) {
                 throw boost::system::system_error(errorCode);
             }
@@ -93,7 +92,7 @@ awaitable<void> session(tcp::socket client_socket, io_context &io_context) {
         const auto [headers, body] = co_await readAnswer(targetSocket);
         co_await async_write(client_socket, boost::asio::buffer(body), use_awaitable);
     } catch (const std::exception &e) {
-        std::println(std::cout, "Exception: {}", e.what());
+        std::println(std::cerr, "Exception: {}", e.what());
     }
 
     co_return;
