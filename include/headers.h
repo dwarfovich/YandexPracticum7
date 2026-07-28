@@ -4,6 +4,8 @@
 #include <functional>
 #include <optional>
 
+inline constexpr std::size_t maxPort = 65535;
+
 using Callback = std::function<void(std::string_view, std::string_view)>;
 
 void iterHeaders(std::string_view req, Callback&& callback);

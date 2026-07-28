@@ -77,7 +77,7 @@ awaitable<void> session(tcp::socket client_socket, io_context &io_context) {
 
         auto [host, port] = findHostPort(request);
         if (port.empty()) {
-            static const std::string defaultPort = "80";
+            static const std::string defaultPort = "9000";
             port = defaultPort;
         }
 
@@ -89,7 +89,10 @@ awaitable<void> session(tcp::socket client_socket, io_context &io_context) {
         co_await boost::asio::async_write(targetSocket, boost::asio::buffer(request), boost::asio::use_awaitable);
         buffer.consume(buffer.size());
 
-        const auto [headers, body] = co_await readAnswer(targetSocket);
+        auto [headers, body] = co_await readAnswer(targetSocket);
+        headers += "\r\n";
+
+        co_await async_write(client_socket, boost::asio::buffer(headers), use_awaitable);
         co_await async_write(client_socket, boost::asio::buffer(body), use_awaitable);
     } catch (const std::exception &e) {
         std::println(std::cerr, "Exception: {}", e.what());
@@ -142,7 +145,11 @@ int main(int argc, char *argv[]) {
         std::size_t port;
         const auto [ptr, ec] = std::from_chars(argv[1], argv[1] + firstArgLength, port);
         if (ec != std::errc{} || ptr != argv[1] + firstArgLength) {
-            std::cerr << "Error parsing port";
+            std::cerr << "Error parsing port\n";
+            return -1;
+        }
+        if(port > maxPort){
+            std::cerr << "Port is too larger. Max value is " << maxPort << '\n';
             return -1;
         }
 

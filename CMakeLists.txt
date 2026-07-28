@@ -11,7 +11,6 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     add_compile_options(-fmax-errors=3)
 endif()
 
-#set(CMAKE_PREFIX_PATH /usr/local/asio)
 add_compile_definitions(_WIN32_WINNT=0x0A00)
 # Ищем необходимые библиотеки
 find_package(Boost REQUIRED COMPONENTS system)
@@ -49,6 +48,8 @@ file(GLOB TEST_SRC_FILES "${CMAKE_SOURCE_DIR}/tests/*.cpp")
 
 add_executable(unit_tests "${TEST_SRC_FILES}")
 target_link_libraries(unit_tests PRIVATE ${PROJECT_NAME}_imp GTest::GTest GTest::Main)
+
+find_package(Python3 REQUIRED)
 
 # Включаем тестирование
 enable_testing()
